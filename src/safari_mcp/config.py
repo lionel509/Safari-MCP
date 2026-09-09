@@ -107,7 +107,7 @@ def load() -> Settings:
         denylist=tuple(compiled),
         raw_denylist=tuple(patterns),
         guard_enabled=_bool(pick("SAFARI_MCP_GUARD", "guard_enabled", None), True),
-        guard_model=str(pick("SAFARI_MCP_GUARD_MODEL", "guard_model", "qwen3.5:2b")),
+        guard_model=str(pick("SAFARI_MCP_GUARD_MODEL", "guard_model", "qwen3.5:4b")),
         ollama_host=str(
             pick("SAFARI_MCP_OLLAMA_HOST", "ollama_host", "http://127.0.0.1:11434")
         ).rstrip("/"),

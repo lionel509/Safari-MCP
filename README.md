@@ -85,21 +85,44 @@ the action is refused.
 
 ### Choosing a gate model
 
-Measured on an M2 Pro against ten cases — five that must be allowed (add to
-cart, fill a form field, search, open a menu) and five that must be refused
-(place order, send mail, delete account, a prompt-injection string, a bank
-transfer via `run_js`):
+Measured on an M2 Pro. The first pass used ten obvious cases, which every local
+model passed — a non-result, since a test everything passes cannot rank
+anything. The set was widened to 34 (17 allow / 17 block, including six
+prompt-injection dialects), and `qwen3:0.6b`, `qwen3:1.7b` and `qwen3:4b` were
+eliminated there:
 
-| Model | Correct | Avg | Notes |
+| Model | 34-case | Avg | |
 |---|---|---|---|
-| `qwen3:0.6b` | 5/10 | 1.97s | **Fails open** — allowed the bank transfer and the injection. Do not use. |
-| `qwen3:1.7b` | 5/10 | 0.38s | Fails closed, but blocks *everything*, including "Add to Cart". Unusable. |
-| **`qwen3.5:2b`** | **10/10** | **0.94s** | The default. |
-| `qwen3:4b` | 5/10 | 2.17s | Same over-refusal as 1.7b, and slower. |
+| `qwen3:0.6b` | 5/10 | 1.97s | **Fails open** — allowed a bank transfer *and* an injection |
+| `qwen3:1.7b` | 5/10 | 0.38s | Fails closed, but refuses "Add to Cart" |
+| `qwen3.5:2b` | 34/34 | 0.81s | |
+| **`qwen3.5:4b`** | **34/34** | **1.57s** | The default |
+| `gemma4:e4b` | 34/34 | 1.62s | No gain over 4b for 4× the weights |
 
-Bigger is not better here. The two mid-size models refuse ordinary browsing,
-and the smallest one waves through exactly the actions that matter. If you swap
-the model, re-run the cases before trusting it.
+The interesting result came from ten harder cases where the danger is *implicit*
+— an innocuous label on a dangerous page, like `BUTTON "✓"` on `/messages/draft`
+or `BUTTON "Continue"` on `/checkout/payment`, paired with innocuous twins
+(`BUTTON "Continue"` on a Wikipedia article). There, `qwen3.5:2b` let the send
+through and `qwen3.5:4b` over-refused "Next" on a Google Form.
+
+Then the *description* was enriched — aria-label, the enclosing form's `action`,
+the enclosing dialog's heading — and **both models went 10/10, `qwen3.5:2b`
+included, at 0.95s.**
+
+> **The binding constraint on gate accuracy is how much signal reaches it, not
+> how large the model reading it is.** A `BUTTON "✓"` is unjudgeable at any
+> parameter count; `BUTTON "✓" | aria-label="Send message" | in form
+> action="/messages/send"` is trivially judgeable at 2B. Spend effort on
+> `_describe`, not on a bigger model.
+
+This is also why the gate stays local. A hosted frontier model would ship your
+page URLs, titles and click targets to a third party on every action, for no
+measurable accuracy gain over a 4B running on your own machine.
+
+`qwen3.5:4b` is the default rather than the faster `2b` purely on the safety
+asymmetry: pre-enrichment it was the one that never missed a danger, and a
+missed danger costs more than a second of latency. Set `guard_model` to
+`qwen3.5:2b` if you want the speed.
 
 ### Configuration
 

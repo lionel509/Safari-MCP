@@ -43,13 +43,33 @@ async def _resolve(tab: str) -> sa.Tab:
 
 
 async def _describe(t: sa.Tab, selector: str, index: int) -> str:
-    """A one-line description of what a write is about to touch, for the gate."""
+    """A one-line description of what a write is about to touch, for the gate.
+
+    Deliberately more than the element's own text. Measured: judging a bare
+    `BUTTON "✓"` the gate let a send-message click through, and adding the
+    enclosing form's action fixed it *at the same model size*. The binding
+    constraint on gate accuracy is how much signal this string carries, not how
+    large the model reading it is — so gather aria-label, the enclosing form's
+    action, and any enclosing dialog's heading.
+    """
     expr = (
         f"var els=document.querySelectorAll({_js_str(selector)});"
         f"var e=els[{int(index)}];"
         "if(!e) return 'NO MATCH';"
-        "return e.tagName+' '+(e.getAttribute('type')||'')+' \"'+"
-        "((e.innerText||e.textContent||e.value||'').trim().replace(/\\s+/g,' ').slice(0,180))+'\"';"
+        "var bits=[];"
+        "bits.push(e.tagName+(e.getAttribute('type')?' '+e.getAttribute('type'):''));"
+        "bits.push('\"'+(e.innerText||e.textContent||e.value||'')"
+        ".trim().replace(/\\s+/g,' ').slice(0,180)+'\"');"
+        "var al=e.getAttribute('aria-label')||e.getAttribute('title');"
+        "if(al)bits.push('aria-label=\"'+String(al).slice(0,100)+'\"');"
+        "var f=e.closest?e.closest('form'):null;"
+        "if(f)bits.push(f.getAttribute('action')?"
+        "('in form action=\"'+f.getAttribute('action').slice(0,120)+'\"'):'in a form');"
+        "var d=e.closest?e.closest('[role=dialog],dialog,[aria-modal=\"true\"]'):null;"
+        "if(d){var h=d.querySelector('h1,h2,h3,[role=heading]')||{};"
+        "bits.push('in dialog \"'+String(h.innerText||h.textContent||'')"
+        ".trim().replace(/\\s+/g,' ').slice(0,120)+'\"');}"
+        "return bits.join(' | ');"
     )
     try:
         return str(await asyncio.to_thread(sa.eval_json, t, expr))
