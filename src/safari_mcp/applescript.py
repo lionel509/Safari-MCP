@@ -118,14 +118,12 @@ on run argv
     tell window 1
       set newTab to make new tab with properties {URL: theURL}
       set current tab to newTab
-      set ti to 0
-      repeat with tb in tabs
-        set ti to ti + 1
-        if tb is newTab then return "1|:|" & ti
-      end repeat
+      -- `index` is a real read-only property on Safari's tab class. Walking the
+      -- tab list and testing `tb is newTab` does not work: AppleScript's
+      -- identity comparison on tab references silently never matches.
+      return "1|:|" & (index of newTab)
     end tell
   end tell
-  return "1|:|0"
 end run
 """
 
@@ -251,20 +249,32 @@ def encode_url(url: str) -> str:
     )
 
 
-def wait_for_load(tab: Tab, timeout: float) -> str:
-    """Poll readyState. Safari's AppleScript has no load event to hook."""
+_BLANK = ("about:blank", "favorites://", "")
+
+
+def wait_for_load(tab: Tab, timeout: float, settle_from: str | None = None) -> str:
+    """Poll readyState. Safari's AppleScript has no load event to hook.
+
+    `settle_from` guards the trap that a freshly made tab starts on about:blank,
+    whose readyState is *already* "complete" — so a naive poll returns before
+    the real navigation has begun. Pass the href the tab must move away from.
+    """
     deadline = time.monotonic() + timeout
     last = "unknown"
+    href = ""
     while time.monotonic() < deadline:
         try:
             last = eval_js(tab, "document.readyState") or "unknown"
+            href = eval_js(tab, "location.href")
         except SafariError:
             last = "unreachable"  # mid-navigation the tab can briefly refuse
-        if last == "complete":
-            return eval_js(tab, "location.href")
+        if last == "complete" and href not in _BLANK:
+            if settle_from is None or href != settle_from:
+                return href
         time.sleep(0.4)
     raise SafariError(
-        f"page did not finish loading within {timeout:.0f}s (readyState={last})"
+        f"page did not finish loading within {timeout:.0f}s "
+        f"(readyState={last}, url={href or 'unknown'})"
     )
 
 
@@ -284,5 +294,5 @@ def open_tab(url: str, timeout: float) -> Tab:
         raise SafariError(f"could not read the new tab's position: {raw!r}") from exc
     tab = Tab(window=w, index=i, url=encoded, title="")
     time.sleep(0.3)
-    final = wait_for_load(tab, timeout)
+    final = wait_for_load(tab, timeout, settle_from="about:blank")
     return Tab(window=w, index=i, url=final, title=eval_js(tab, "document.title"))
