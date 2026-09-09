@@ -216,3 +216,10 @@ __marimo__/
 
 # Streamlit
 .streamlit/secrets.toml
+
+# --- safari-mcp ---
+# This folder doubles as a note folder in a private Obsidian vault. The project
+# hub note lives one level up in Active/ by convention; if one ever lands here
+# by accident, do not publish it.
+/Safari MCP — *.md
+.DS_Store

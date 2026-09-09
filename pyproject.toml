@@ -1,0 +1,22 @@
+[project]
+name = "safari-mcp"
+version = "0.1.0"
+description = "MCP server that drives your real, logged-in Safari via AppleScript, with a local model gating every write."
+readme = "README.md"
+requires-python = ">=3.11"
+license = { text = "MIT" }
+authors = [{ name = "Lionel Weng" }]
+dependencies = [
+    "mcp>=2.0.0",
+    "httpx>=0.27",
+]
+
+[project.scripts]
+safari-mcp = "safari_mcp.server:main"
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/safari_mcp"]
