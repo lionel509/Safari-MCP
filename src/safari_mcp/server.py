@@ -191,9 +191,7 @@ async def open_tab(url: str) -> str:
     try:
         check_denylist("open", url, cfg)
         t = await asyncio.to_thread(sa.open_tab, url, cfg.load_timeout)
-    except Blocked as exc:
-        raise RuntimeError(str(exc)) from exc
-    except sa.SafariError as exc:
+    except (Blocked, sa.SafariError) as exc:
         raise RuntimeError(str(exc)) from exc
     return f"opened {t.label()}"
 
@@ -216,9 +214,7 @@ async def navigate(tab: str, url: str) -> str:
         check_denylist("navigate away from", t.url, cfg)
         check_denylist("navigate to", url, cfg)
         final = await asyncio.to_thread(sa.navigate, t, url, cfg.load_timeout)
-    except Blocked as exc:
-        raise RuntimeError(str(exc)) from exc
-    except sa.SafariError as exc:
+    except (Blocked, sa.SafariError) as exc:
         raise RuntimeError(str(exc)) from exc
     return f"loaded {final}"
 
@@ -250,9 +246,7 @@ async def click(tab: str, selector: str, index: int = 0) -> str:
             "e.click();return 'clicked';"
         )
         await asyncio.to_thread(sa.eval_json, t, expr)
-    except Blocked as exc:
-        raise RuntimeError(str(exc)) from exc
-    except sa.SafariError as exc:
+    except (Blocked, sa.SafariError) as exc:
         raise RuntimeError(str(exc)) from exc
     return f"clicked {detail}"
 
@@ -301,9 +295,7 @@ async def fill(tab: str, selector: str, value: str, index: int = 0) -> str:
             "return {ok:true,now:String(e.isContentEditable?e.textContent:e.value).slice(0,120)};"
         )
         result = await asyncio.to_thread(sa.eval_json, t, expr)
-    except Blocked as exc:
-        raise RuntimeError(str(exc)) from exc
-    except sa.SafariError as exc:
+    except (Blocked, sa.SafariError) as exc:
         raise RuntimeError(str(exc)) from exc
     if not result or not result.get("ok"):
         raise RuntimeError(f"could not fill {selector!r} at index {index}")
@@ -333,9 +325,7 @@ async def run_js(tab: str, code: str) -> str:
             settings=cfg,
         )
         data = await asyncio.to_thread(sa.eval_json, t, code)
-    except Blocked as exc:
-        raise RuntimeError(str(exc)) from exc
-    except sa.SafariError as exc:
+    except (Blocked, sa.SafariError) as exc:
         raise RuntimeError(str(exc)) from exc
     return json.dumps(data, indent=2) if data is not None else "(no value returned)"
 
