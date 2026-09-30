@@ -223,3 +223,23 @@ __marimo__/
 # by accident, do not publish it.
 /Safari MCP — *.md
 .DS_Store
+
+# --- cleanup (issue #1) -------------------------------------------------
+# Secrets — never committed, and deliberately KEPT by the cleanup commands in
+# CLEANUP.md. (.env and .venv are already covered above; this catches the
+# variants and the usual credential file names.)
+.env.*
+*.key
+*.pem
+credentials.json
+secrets.json
+
+# Editors — the JetBrains and VS Code blocks above are commented out in the
+# stock template, but the editors still create the folders.
+.idea/
+.vscode/
+*.swp
+
+# graphify output — rebuilt with `graphify update .`, never versioned
+# (same as every sibling repo; this folder doubles as a vault note folder)
+graphify-out/
