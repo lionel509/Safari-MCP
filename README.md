@@ -38,7 +38,7 @@ takes safety seriously.
 git clone git@github.com:lionel509/Safari-MCP.git
 cd Safari-MCP
 UV_PROJECT_ENVIRONMENT=~/.venvs/safari-mcp uv sync
-ollama pull qwen3.5:2b
+ollama pull qwen3.5:4b
 ```
 
 The virtualenv deliberately lives **outside** the project directory — the
@@ -132,7 +132,7 @@ missed danger costs more than a second of latency. Set `guard_model` to
 |---|---|---|
 | `denylist` | see `config.py` | Regexes; any match blocks all writes on that URL |
 | `guard_enabled` | `true` | Layer 2 on/off. Layer 1 stays live regardless |
-| `guard_model` | `qwen3.5:2b` | Any Ollama model |
+| `guard_model` | `qwen3.5:4b` | Any Ollama model |
 | `ollama_host` | `http://127.0.0.1:11434` | |
 | `guard_timeout` | `20.0` | Seconds |
 | `load_timeout` | `20.0` | Seconds to wait for `readyState === "complete"` |
@@ -162,6 +162,14 @@ element's native setter and dispatches `input` and `change` with
 
 Tab `pid` looks like a stable handle and is not — same-origin tabs share a
 WebContent process, so two Gmail tabs report the same pid.
+
+## Cleanup
+
+The stock Python `.gitignore` here is extended with the credential patterns
+(`.env.*`, `*.key`, `*.pem`, `credentials.json`, `secrets.json`), editor folders and
+`graphify-out/`. [CLEANUP.md](CLEANUP.md) lists what this project leaves behind —
+in the checkout, in `~/.venvs`, in `~/.config/safari-mcp`, and in Ollama — and the
+exact commands to remove each, keeping your secrets by default.
 
 ## License
 
